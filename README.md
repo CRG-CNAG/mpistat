@@ -11,14 +11,12 @@ The collector is an mpi program written in C++. It uses the libcircle library fo
 
 Running the collector pipeline
 ==============================
-The collector pipeline requires a working mpi system. It consists of the following parts :
+The collector pipeline requires a working mpi system, a compute cluster for running the workers (so as to spread the IO), and a batch system for co-ordinating the pipeline. We have templates for Slurm and Univa Grid Engine. It should be relatively straightforward to write batch system templates for any other system (e.g. Platform LSF).It consists of the following parts :
 
 * A C++ mpi program that runs on the cluster and co-ordinates walking through all the inodes in an efficient way. An ouptut file for each inode type (regular file, directory, symlink, pipe, block device, socket) is created by each worker.
 * A python program which parses the main stdout file from the mpi program and uses matplotlib to generate a graph of the progress of the collector over time.
 * A python program that generates a schema for a clickhouse database for the run using a jinja2 template and runs the schema file against a clickhouse instance to create the empty database
 * An array job that loads each of the protocol buffer format data files into the database.
-
-You will need to have a compute cluster with a batch processor to run the pipeline. We have templates for slurm and Univa Grid Engine. It should be relatively straightforward to write batch system templates for any other system (e.g. Platform LSF).
 
 The command line tool
 =====================
