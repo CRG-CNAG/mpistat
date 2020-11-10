@@ -7,7 +7,7 @@ This repository contains a pipeline for lstating every single inode in a file sy
 
 Dependencies
 ============
-The collector is an mpi program written in C++. It uses the libcircle library for efficiently distibuting walking a filetree. It producss data files in gzipped google protocol buffer format. It uses boost for gzipping the output on the fly to reduce the amount of disk IO and size of the data files.
+The collector is an mpi program written in C++. It uses the libcircle library for efficient distribution of a filetree walk. It producss data files in gzipped google protocol buffer format. It uses boost for gzipping the output on the fly to reduce the amount of disk IO and size of the data files.
 
 Running the collector pipeline
 ==============================
