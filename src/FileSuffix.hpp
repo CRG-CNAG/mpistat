@@ -1,12 +1,3 @@
-// examine a filename and return its 'suffix class'
-// this is a chain of checks for common file suffixes or regular expressions
-// on file suffixes to try to group files into a common 'type'
-// converts filename to lower case so that files ending in .bam or .BAM or .BaM etc. are all classified as 'bam'
-// other tricky ones - .jpg .jpeg & all upper / lower case combinations of these are all 'jpeg'
-// this classification needs to be tuned for each local site
-
-
-
 // standard headers
 #include <cstring>
 
