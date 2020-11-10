@@ -4,3 +4,5 @@
 # needs to run as root so it can walk the full tree and lstat everything whithout
 # permissions issues
 43 4 * * * root /path/to/mpistat/bin/run_mpistat_collect.sh --tag test --num_workers 8 /seed/directory/to/start/from /another/seed/if/needed >> /var/log/mpistat.log 2>&1
+
+
