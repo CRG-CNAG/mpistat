@@ -10,3 +10,6 @@ export GCC_HOME=/location/of/gcc
 export PATH=$PROTOBUF_HOME/bin:$PYTHON_HOME/bin:$MPI_HOME/bin:$BINUTILS_HOME/bin:$GCC_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$GCC_LIBS:$PROTOBUF_HOME/lib:$PYTHON_HOME/lib:$MPI_HOME/lib:$BOOST_HOME/lib:$CIRCLE_HOME/lib:$LD_LIBRARY_PATH
 
+# you may need to set environment variables for your
+# batch system here so that a cron job will have the
+# necessary environment set
