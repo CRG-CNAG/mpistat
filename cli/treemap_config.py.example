@@ -1,0 +1,8 @@
+# you will need to make a local copy of this file
+# and put in the hostname of your clickhouse server,
+# the default tag to use to name your databases (e.g. scratch, home, software etc.)
+# memcached is used for caching, you will likely just install this on the same server
+# as clickhouse
+CLICK_HOST = 'clickhouse '
+DEFAULT_TAG = 'scratch'
+MC_SERVERS = ['clickhouse']
