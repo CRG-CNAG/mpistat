@@ -1,0 +1,15 @@
+# this file contains some config variables used by the mpistat pipeline
+
+# which scheduler are you using
+# currently supports slurm and uge
+# adapting to to other batch systems is trivial
+# the main task is to create appropriate batch sctipt templates
+scheduler = 'slurm'
+
+# the hostname of your clickhouse server
+click_host = 'clikhouse_server'
+
+# number of concurrent protocol buffer files to load concurrently
+# the load is an array job and we want to limit the concurrency
+# to avoid overloading the clickhouse server
+click_num_parallel_loads = 16
