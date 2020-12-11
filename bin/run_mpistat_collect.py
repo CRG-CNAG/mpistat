@@ -37,6 +37,53 @@ def get_args():
     return parser.parse_args()
 
 
+
+def submit_batch_job(job_args, job_dependency=None):
+    '''
+    job_args contains the script to run
+    and any command line arguments to pass to it
+    all paths should be full paths not relative paths
+    job_dependency is a job_id this job depends on
+    returns the queued job id
+    '''
+    if mpistat_config.scheduler == 'uge':
+        cmd = [
+            'qsub',
+            '-terse']
+    else:
+        cmd = [
+            'sbatch',
+            '--parsable'] 
+
+    # add a job dependency if needed
+    if job_dependency is not None:
+        if mpistat_config.scheduler == 'uge':
+            cmd.append('-hold_jid')
+            cmd.append(job_dependency)
+        else:
+            cmd.append('--dependency=afterok:{}'.format(job_dependency)) 
+
+    # finish constructing the qsub command
+    cmd += job_args 
+    
+    # run the command and capture the output
+    print('submitting job...') 
+    print(' '.join(cmd))
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode == 0:
+        m = re.search(r'^(\d+)', result.stdout.decode('latin1'))
+        if m:
+            job_id = m.group(1)
+            print('got job id {}'.format(job_id))
+            return job_id
+        else:
+            raise Exception(
+                    'failed to parse job_id : {}'.format(result.stdout))
+    else: print('submission failed...')
+    err = result.stderr
+    print(err)
+    raise Exception(err)
+                                                                                                                                                                                                                                                                                                                     
 def make_job(jinja_env, batch_run_dir, job_name,
              job_args, job_context, job_dependency=None):
     '''
