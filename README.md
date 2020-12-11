@@ -1,13 +1,15 @@
 # mpistat
-Toolchain for collecting and reporting on inode metadata for HPC filesystems,
+Toolchain for collecting and reporting on inode metadata for HPC filesystems. We have used it on lustre, isilon and GPFS. We have also run this against a non-parallel simple standalone NFS Server and it works well if you don't use too many workers.
+
+Note that we will be putting documentation in the [wiki](https://github.com/CRG-CNAG/mpistat/wiki) associated with this repo 
 
 Overview
 ========
-This repository contains a pipeline for lstating every single inode in a file system and storing the collected data in a clickhouse database. It also provides a command line tool for exploring the data and a web-application that reproduces the functionality of the commandline tool and allows the generation of further reports.
+This repository contains a pipeline for lstating every single inode in a file system and storing the collected data in a clickhouse database. It also provides a command line tool for exploring the data and a web-application (coming soon...) that reproduces the functionality of the commandline tool and allows the generation of further reports.
 
 Dependencies
 ============
-The collector is an mpi program written in C++. It uses the libcircle library for efficient distribution of a filetree walk. It producss data files in gzipped google protocol buffer format. It uses boost for gzipping the output on the fly to reduce the amount of disk IO and size of the data files.
+The collector is an mpi program written in C++. It uses the [libcircle](https://github.com/hpc/libcircle) library for efficient distribution of a filetree walk. It producss data files in gzipped google protocol buffer format. It uses boost for gzipping the output on the fly to reduce the amount of disk IO and size of the data files.
 
 You should set up a python virtual environment in the $MPISTAT_HOME directory, likely called venv. Use a relatively new python (e.g. 3.7+). Once you have the base venv set up, install the extra modules needed using the requirements.txt file.
 
@@ -27,6 +29,11 @@ The command line tool
 There is a command line tool which can report stats on the amount of space taken up by files, the number of files and the 'atime cost' at a given path and according to various filters on user uid, group id, atime, mtime, file suffix and so-on. It can report on the sub-directory under a particular directory or do a report by user, by group or by file suffix.
 
 It uses a memcached instance to cache results of queries to avoid hitting the clickhouse database unnecessarily.
+
+A note on atime_cost and mtime_cost
+====================================
+We have estimated that it costs us about 10 euros to store 1 Terabyte for 1 Month. This takes into account the cost of the hardware amortized over its lifetime, maintenance costs, staff costs, electricity etc. If a large 1TB file has sat on a very expensive parallel file system without being accessed then this can be considered a waste. 'Cold' data should be moved off the fast and expensive storage to slower and cheaper storage. atime_cost is the sum of the product of the size of a file and the amount of time elapsed since the data was last read (atime) over all files in the filter set. mtime_cost does a similar procedure but sing the mitme (time the data was last modified). Ordering by atime_cost can be useful to decide where to focus tidying / archiving efforts and putting things in terms of a monetary value can help to add a bit of peer pressure to ger people to be a bit more frugal with their space usage.
+You can modify the  baseline cost per terabyte month in the clickhouse schema template. This will likely become templatised in future so you can easily use your own values, modify them over time to reflect the fact that storage gets cheaper over time and to use different values for scans of systemd with differing baseline costs.
 
 Example performance
 ===================
