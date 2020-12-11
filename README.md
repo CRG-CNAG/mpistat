@@ -28,6 +28,11 @@ There is a command line tool which can report stats on the amount of space taken
 
 It uses a memcached instance to cache results of queries to avoid hitting the clickhouse database unnecessarily.
 
+A note on atime_cost and mtime_cost
+====================================
+We have estimated that it costs us about 10 euros to store 1 Terabyte for 1 Month. This takes into account the cost of the hardware amortized over its lifetime, maintenance costs, staff costs, electricity etc. If a large 1TB file has sat on a very expensive parallel file system without being accessed then this can be considered a waste. 'Cold' data should be moved off the fast and expensive storage to slower and cheaper storage. atime_cost is the sum of the product of the size of a file and the amount of time elapsed since the data was last read (atime) over all files in the filter set. mtime_cost does a similar procedure but sing the mitme (time the data was last modified). Ordering by atime_cost can be useful to decide where to focus tidying / archiving efforts and putting things in terms of a monetary value can help to add a bit of peer pressure to ger people to be a bit more frugal with their space usage.
+You can modify the  baseline cost per terabyte month in the clickhouse schema template. This will likely become templatised in future so you can easily use your own values, modify them over time to reflect the fact that storage gets cheaper over time and to use different values for scans of systemd with differing baseline costs.
+
 Example performance
 ===================
 We use this toolchain to collect data on an Isilon system that contains around 3.5PB of data and about 1.6 billion inodes. It takes about 24 hours to scan all the inodes using 128 mpi workers on a 10gbps ethernet interconnect. We also run this against a 4.4PB Lustre filesystem containing 400 million inodes. A scan takes 4 hours on this system using 32 mpi workers with a 40gbps infiniband interconnect.
