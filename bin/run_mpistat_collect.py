@@ -12,7 +12,6 @@ import math
 
 import jinja2
 
-import mpistat_utils
 import mpistat_config
 
 
@@ -99,7 +98,7 @@ def make_job(jinja_env, batch_run_dir, job_name,
     cmd = [batch_script_path] + job_args
 
     # submit the progress job with a dependency on the collector job
-    return mpistat_utils.submit_batch_job(cmd, job_dependency)
+    return submit_batch_job(cmd, job_dependency)
 
 
 def main():
