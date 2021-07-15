@@ -245,19 +245,25 @@ def subtree_sums(
     for the given path and filters passed on via the
     args dictionary
     '''
+    subqry = '''
+        (select blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
         select
             sum(blocks*512) as tot_size,
-            count(*) as tot_num,
+            sum(links) as tot_num,
             sum(atime_cost) as tot_atime_cost
-        from files
-        where full_path like '{}/%'
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
         modified_before, modified_after, accessed_before, accessed_after,
         size_less_than, size_greater_than, suffix, regex)
+    subqry += 'group by blocks, atime_cost)'
+    qry = qry.format(subqry)
     return get_click(database).execute(qry)[0]
 
 
@@ -269,21 +275,27 @@ def star_dot_star(
     '''
     get sums for the given path and filters passed on via the args dictionary
     '''
+    subqry = '''
+        (select blocks, atime_cost,
+            count(inode) as links
+        from files
+        where directory='{}'
+    '''.format(path)
     qry = '''
         select
             sum(blocks*512) as tot_size,
-            count(*) as tot_num,
+            sum(links) as tot_num,
             sum(atime_cost) as tot_atime_cost
-        from files
-        where directory='{}'
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
         modified_before, modified_after,
         accessed_before, accessed_after,
         size_less_than, size_greater_than,
         suffix, regex)
+    subqry += 'group by blocks, atime_cost)'
+    qry = qry.format(subqry)
     return get_click(database).execute(qry)[0]
 
 
