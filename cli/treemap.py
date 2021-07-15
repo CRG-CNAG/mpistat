@@ -451,26 +451,33 @@ def by_group(
     children = data['children']
 
     # prepare the query to get the by_group data
+    subqry = '''
+        (select gid, blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
         select
             gid,
             sum(blocks*512) as size,
-            count(*) as num_files,
-            sum(atime_cost) as atime_cost
-        from files
-        where full_path like '{}/%'
+            sum(links) as num_files,
+            sum(atime_cost) as tot_atime_cost
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
-        modified_before, modified_after, accessed_before, accessed_after,
-        size_less_than, size_greater_than, suffix, regex)
+        modified_before, modified_after,
+        accessed_before, accessed_after,
+        size_less_than, size_greater_than,
+        suffix, regex)
+    subqry += 'group by gid, blocks, atime_cost)'
+    qry = qry.format(subqry)
     qry += '''
         group by gid
         order by {} desc
         limit {}
-    '''
-    qry = qry.format(order_by, limit)
+    '''.format(order_by, limit)
 
     # execute it and process the results
     rows = get_click(database).execute(qry)
