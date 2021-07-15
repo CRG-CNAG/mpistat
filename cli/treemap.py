@@ -321,8 +321,8 @@ def get_subdir_data(
     tot_num_files = 0
     tot_atime_cost = 0
 
-    # get the *.* data if any
-    size, num_files, atime_cost = star_dot_star(
+    # get totals for the current folder
+    size, num_files, atime_cost = subtree_sums(
         database, path, group, user,
         modified_before, modified_after, accessed_before, accessed_after,
         size_less_than, size_greater_than, suffix, regex)
@@ -330,6 +330,13 @@ def get_subdir_data(
         tot_size += size
         tot_num_files += num_files
         tot_atime_cost += atime_cost
+
+    # get the *.* data if any
+    size, num_files, atime_cost = star_dot_star(
+        database, path, group, user,
+        modified_before, modified_after, accessed_before, accessed_after,
+        size_less_than, size_greater_than, suffix, regex)
+    if num_files > 0:
         children.append({
             'name': '*.*',
             'size': size,
@@ -343,9 +350,6 @@ def get_subdir_data(
             modified_before, modified_after, accessed_before, accessed_after,
             size_less_than, size_greater_than, suffix, regex)
         if num_files > 0:
-            tot_size += size
-            tot_num_files += num_files
-            tot_atime_cost += atime_cost
             children.append({
                 'name': directory.rsplit('/', 1)[-1],
                 'size': size,
