@@ -21,6 +21,7 @@
 #include <boost/iostreams/device/file.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 // external library headers
 #include <libcircle.h>
@@ -168,7 +169,14 @@ bool do_lstat() {
     // return true if this is a directory 
     is_dir=S_ISDIR(buf.st_mode);
   } else {
-    std::cerr << "Cannot lstat '" << item_buf << "' : " << strerror (errno) << std::endl;
+    // the lstat failed
+    // its possible the file was deleted between adding it to the work queue and
+    // removing it to do the lstat so check it exists
+    if (!boost::filesystem::exists(item_buf)) {
+      std::cerr << "File deleted : '" << item_buf << "' : " << strerror(errno) << std::endl;
+    } else {
+      std::cerr << "Cannot lstat '" << item_buf << "' : " << strerror(errno) << std::endl;
+    }
   }
   return is_dir;
 }
