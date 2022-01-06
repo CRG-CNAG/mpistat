@@ -127,20 +127,31 @@ def path_depth(path):
     return len(path.split('/')) - 1
 
 
-def get_databases():
+def default_tag():
+    return treemap_config.DEFAULT_TAG
+
+
+def get_databases(tag):
     '''
-    returns the set available databases
+    returns the set of available databases
+    only shows for the given tag if included
     '''
     click = clickhouse_driver.Client(
         treemap_config.CLICK_HOST,
         compression=True)
-    rows = click.execute('show databases')
+    qry = 'select name from system.databases'
+    if tag is not None:
+        qry += " where name like '{}%'".format(tag)
+    rows = click.execute(qry)
     databases = set()
     for row in rows:
         databases.add(row[0])
-    databases.remove('default')
-    databases.remove('system')
-    databases.remove('_temporary_and_external_tables')
+    try:
+        databases.remove('default')
+        databases.remove('system')
+        databases.remove('_temporary_and_external_tables')
+    except:
+        pass
     return databases
 
 

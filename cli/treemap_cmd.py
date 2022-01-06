@@ -67,9 +67,10 @@ def get_args():
             only use with other filters otherwise the query will be
             very slow''')
     parser.add_argument(
-        '-d', '--database',
+        '-d', '--database', nargs='*',
         help='the clickhouse database to use. if you omit this parameter it'
-        ' will decide on the appropriate one')
+        ' will decide on the appropriate one.'
+        ' if doing a diff you can pass up to 2 databases')
     parser.add_argument(
         '-o', '--order_by',
         help='the field to order the table by. should be size, num_files or atime_cost')
@@ -105,10 +106,14 @@ def get_args():
     parser.add_argument(
         '-t', '--tag',
         help='choose the latest database with this tag')
+    parser.set_defaults(tag=treemap.default_tag())
+    parser.add_argument(
+        '--diff',
+        help='report differences between 2 databases')
     args = parser.parse_args()
     args.path = args.path.rstrip('/')
-    if args.database is None:
-        args.database = treemap.get_database(args.tag)
+
+    # parse date arguments
     if args.modified_before is not None:
         args.modified_before = end_of_day(
             dateparser.parse(args.modified_before).timestamp())
@@ -134,12 +139,37 @@ def end_of_day(epoch):
     return datetime(
         start_dt.year, start_dt.month, start_dt.day, 23, 59, 59).timestamp()
 
+def get_databases(args):
+    '''
+    what databases do we need to use?
+    '''
 
-def print_databases():
+    # list the databases if that is the request
+    if args.list_databases:
+        print_databases(args.tag)
+        sys.exit(0)
+   
+    if args.diff is None:
+        # just want a single database
+        if args.database is None:
+            # use the latest default tag
+        else:
+            # check the database supplied exists
+    else:
+        # we need 2 databases to diff
+        if len(args.database) < 1:
+            # use the latest 2 default tag ones
+        elif len(args.database) < 2:
+            # use the latest default tag db and the one passed in
+        else:
+            # use the databases passed in
+
+
+def print_databases(tag):
     '''
     print list of available databases
     '''
-    databases = treemap.get_databases()
+    databases = treemap.get_databases(tag)
     print('|-' + '-'*30 + '-|')
     print('| {:30s} |'.format('database'))
     print('|-' + '-'*30 + '-|')
@@ -235,12 +265,7 @@ def main():
     # get commandline args
     args = get_args()
 
-    # if --list_databases option selected
-    # print available databases and exit cleanly
-    if args.list_databases:
-        # --list_databases option selected
-        print_databases()
-        return 0
+    get_databases(args)
 
     # get the command line arguments and
     # sanitise them
@@ -260,6 +285,10 @@ def main():
     order_by = args.order_by
     limit = args.limit
     name_width = args.name_width
+    diff = args.diff
+
+    if diff is not None:
+        print('doing a diff of {}'.format(diff))
 
     # placeholder for the query data
     # and the column name to display in the table
@@ -297,6 +326,7 @@ def main():
             modified_before, modified_after, accessed_before, accessed_after,
             size_less_than, size_greater_than, suffix, regex)
         col_name = 'subdir'
+
 
     # print a table of the data returned
     print_table(data, col_name, order_by, name_width)
