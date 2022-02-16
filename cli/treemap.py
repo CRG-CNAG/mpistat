@@ -256,19 +256,25 @@ def subtree_sums(
     for the given path and filters passed on via the
     args dictionary
     '''
+    subqry = '''
+        (select blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
         select
             sum(blocks*512) as tot_size,
-            count(*) as tot_num,
+            sum(links) as tot_num,
             sum(atime_cost) as tot_atime_cost
-        from files
-        where full_path like '{}/%'
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
         modified_before, modified_after, accessed_before, accessed_after,
         size_less_than, size_greater_than, suffix, regex)
+    subqry += 'group by blocks, atime_cost)'
+    qry = qry.format(subqry)
     return get_click(database).execute(qry)[0]
 
 
@@ -280,21 +286,27 @@ def star_dot_star(
     '''
     get sums for the given path and filters passed on via the args dictionary
     '''
+    subqry = '''
+        (select blocks, atime_cost,
+            count(inode) as links
+        from files
+        where directory='{}'
+    '''.format(path)
     qry = '''
         select
             sum(blocks*512) as tot_size,
-            count(*) as tot_num,
+            sum(links) as tot_num,
             sum(atime_cost) as tot_atime_cost
-        from files
-        where directory='{}'
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
         modified_before, modified_after,
         accessed_before, accessed_after,
         size_less_than, size_greater_than,
         suffix, regex)
+    subqry += 'group by blocks, atime_cost)'
+    qry = qry.format(subqry)
     return get_click(database).execute(qry)[0]
 
 
@@ -320,8 +332,8 @@ def get_subdir_data(
     tot_num_files = 0
     tot_atime_cost = 0
 
-    # get the *.* data if any
-    size, num_files, atime_cost = star_dot_star(
+    # get totals for the current folder
+    size, num_files, atime_cost = subtree_sums(
         database, path, group, user,
         modified_before, modified_after, accessed_before, accessed_after,
         size_less_than, size_greater_than, suffix, regex)
@@ -329,6 +341,13 @@ def get_subdir_data(
         tot_size += size
         tot_num_files += num_files
         tot_atime_cost += atime_cost
+
+    # get the *.* data if any
+    size, num_files, atime_cost = star_dot_star(
+        database, path, group, user,
+        modified_before, modified_after, accessed_before, accessed_after,
+        size_less_than, size_greater_than, suffix, regex)
+    if num_files > 0:
         children.append({
             'name': '*.*',
             'size': size,
@@ -342,9 +361,6 @@ def get_subdir_data(
             modified_before, modified_after, accessed_before, accessed_after,
             size_less_than, size_greater_than, suffix, regex)
         if num_files > 0:
-            tot_size += size
-            tot_num_files += num_files
-            tot_atime_cost += atime_cost
             children.append({
                 'name': directory.rsplit('/', 1)[-1],
                 'size': size,
@@ -380,30 +396,35 @@ def by_user(
     children = data['children']
 
     # prepare the query to get the by_user data
+    subqry = '''
+        (select uid, blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
         select
             uid,
             sum(blocks*512) as size,
-            count(*) as num_files,
-            sum(atime_cost) as atime_cost
-        from files
-        where full_path like '{}/%'
+            sum(links) as num_files,
+            sum(atime_cost) as tot_atime_cost
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
         modified_before, modified_after,
         accessed_before, accessed_after,
         size_less_than, size_greater_than,
         suffix, regex)
+    subqry += 'group by uid, blocks, atime_cost)'
+    qry = qry.format(subqry)
     qry += '''
         group by uid
         order by {} desc
         limit {}
-    '''
+    '''.format(order_by, limit)
 
     # execute it and process the results
-    qry = qry.format(order_by, limit)
     rows = get_click(database).execute(qry)
     for row in rows:
         children.append({
@@ -445,26 +466,33 @@ def by_group(
     children = data['children']
 
     # prepare the query to get the by_group data
+    subqry = '''
+        (select gid, blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
         select
             gid,
             sum(blocks*512) as size,
-            count(*) as num_files,
-            sum(atime_cost) as atime_cost
-        from files
-        where full_path like '{}/%'
+            sum(links) as num_files,
+            sum(atime_cost) as tot_atime_cost
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
-        modified_before, modified_after, accessed_before, accessed_after,
-        size_less_than, size_greater_than, suffix, regex)
+        modified_before, modified_after,
+        accessed_before, accessed_after,
+        size_less_than, size_greater_than,
+        suffix, regex)
+    subqry += 'group by gid, blocks, atime_cost)'
+    qry = qry.format(subqry)
     qry += '''
         group by gid
         order by {} desc
         limit {}
-    '''
-    qry = qry.format(order_by, limit)
+    '''.format(order_by, limit)
 
     # execute it and process the results
     rows = get_click(database).execute(qry)
@@ -503,26 +531,33 @@ def by_suffix(
     children = data['children']
 
     # prepare the query to get the by_suffix data
+    subqry = '''
+        (select suffix, blocks, atime_cost,
+            count(inode) as links
+        from files
+        where full_path like '{}/%'
+    '''.format(path)
     qry = '''
-       select
-           suffix,
-           sum(blocks*512) as size,
-           count(*) as num_files,
-           sum(atime_cost) as atime_cost
-       from files
-       where full_path like '{}/%'
+        select
+            suffix,
+            sum(blocks*512) as size,
+            sum(links) as num_files,
+            sum(atime_cost) as tot_atime_cost
+        from {}
     '''
-    qry = qry.format(path)
-    qry += filter_qry(
+    subqry += filter_qry(
         group, user,
-        modified_before, modified_after, accessed_before, accessed_after,
-        size_less_than, size_greater_than, suffix, regex)
+        modified_before, modified_after,
+        accessed_before, accessed_after,
+        size_less_than, size_greater_than,
+        suffix, regex)
+    subqry += 'group by suffix, blocks, atime_cost)'
+    qry = qry.format(subqry)
     qry += '''
        group by suffix
        order by {} desc
        limit {}
-    '''
-    qry = qry.format(order_by, limit)
+    '''.format(order_by, limit)
 
     # excecute it and process the results
     rows = get_click(database).execute(qry)
